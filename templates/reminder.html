@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medicare - Your Medicine Reminders</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ username }}!</h1>
+        <p>Manage your medicine schedule easily and never miss a dose.</p>
+
+        <!-- Error message -->
+        {% if error_message %}
+            <p class="error">{{ error_message }}</p>
+        {% endif %}
+
+        <!-- Add Reminder -->
+        <div class="reminder-form">
+            <h2>Add a Medicine Reminder</h2>
+            <form action="/add_reminder/{{ username }}" method="POST">
+                <input type="text" name="name" placeholder="Medicine Name" required><br>
+                <input type="text" name="time" placeholder="e.g., 1:25 PM" required><br>
+                <button type="submit">Add Reminder</button>
+            </form>
+        </div>
+
+        <!-- List of Reminders -->
+        <div class="reminder-list">
+            <h2>Your Reminders</h2>
+            <ul>
+                {% for reminder in reminders %}
+                    <li>{{ reminder.name }} at {{ reminder.time }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Logout -->
+        <form action="/logout" method="POST">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+</body>
+</html>
