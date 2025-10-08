@@ -1,47 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Medicare - Your Medicine Reminders</title>
+    <meta charset="UTF-8">
+    <title>Medicine Reminder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Notification sound logic
+        function checkReminders(reminders) {
+            const now = new Date();
+            const currentDate = now.toISOString().split('T')[0];
+            const currentTime = now.toTimeString().slice(0,5);
 
-    <!-- CSS -->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+            reminders.forEach(r => {
+                if (r.date === currentDate && r.time === currentTime) {
+                    alert("Time to take " + r.medicine + "!");
+                    var audio = new Audio("/static/alert.mp3");
+                    audio.play();
+                }
+            });
+        }
+
+        // Fetch reminders every 60 seconds
+        setInterval(() => {
+            fetch('/static/data.json').then(res => res.json()).then(data => checkReminders(data));
+        }, 60000);
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome, {{ username }}!</h1>
-        <p>Manage your medicine schedule easily and never miss a dose.</p>
+    <h1>💊 Medicine Reminder</h1>
 
-        <!-- Error message -->
-        {% if error_message %}
-            <p class="error">{{ error_message }}</p>
-        {% endif %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="messages">
+          {% for category, msg in messages %}
+            <li class="{{ category }}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 
-        <!-- Add Reminder -->
-        <div class="reminder-form">
-            <h2>Add a Medicine Reminder</h2>
-            <form action="/add_reminder/{{ username }}" method="POST">
-                <input type="text" name="name" placeholder="Medicine Name" required><br>
-                <input type="text" name="time" placeholder="e.g., 1:25 PM" required><br>
-                <button type="submit">Add Reminder</button>
-            </form>
-        </div>
+    <form action="/add" method="POST">
+        <input type="text" name="medicine" placeholder="Medicine Name" required>
+        <input type="time" name="time" required>
+        <input type="date" name="date" required>
+        <button type="submit">Add Reminder</button>
+    </form>
 
-        <!-- List of Reminders -->
-        <div class="reminder-list">
-            <h2>Your Reminders</h2>
-            <ul>
-                {% for reminder in reminders %}
-                    <li>{{ reminder.name }} at {{ reminder.time }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- Logout -->
-        <form action="/logout" method="POST">
-            <button type="submit">Logout</button>
-        </form>
-    </div>
+    <h2>Active Reminders</h2>
+    <ul>
+        {% for r in reminders %}
+            <li>
+                {{ r.medicine }} — {{ r.date }} at {{ r.time }}
+                <a href="{{ url_for('delete_reminder', index=loop.index0) }}" class="delete-btn">🗑 Delete</a>
+            </li>
+        {% else %}
+            <li>No reminders added yet.</li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
