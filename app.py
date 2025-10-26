@@ -1,62 +1,38 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-import json, os
+from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
+import threading
+import time
 
 app = Flask(__name__)
-app.secret_key = 'secretkey'
+app.secret_key = "secret"
 
-DATA_FILE = 'data.json'
-
-# Load reminders
-def load_reminders():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
-    return []
-
-# Save reminders
-def save_reminders(reminders):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(reminders, f, indent=4)
+# Temporary in-memory storage (for now)
+reminders = []
 
 @app.route('/')
 def index():
-    reminders = load_reminders()
-    return render_template('reminder.html', reminders=reminders)
+    return render_template('index.html', reminders=reminders)
 
-@app.route('/add', methods=['POST'])
+@app.route('/add', methods=['GET', 'POST'])
 def add_reminder():
-    medicine = request.form['medicine'].strip()
-    time = request.form['time'].strip()
-    date = request.form['date'].strip()
-
-    if not medicine or not time or not date:
-        flash("All fields are required!", "error")
-        return redirect(url_for('index'))
-
-    try:
-        datetime.strptime(time, "%H:%M")
-        datetime.strptime(date, "%Y-%m-%d")
-    except ValueError:
-        flash("Invalid time or date format!", "error")
-        return redirect(url_for('index'))
-
-    reminders = load_reminders()
-    reminders.append({"medicine": medicine, "time": time, "date": date})
-    save_reminders(reminders)
-
-    flash("Reminder added successfully!", "success")
-    return redirect(url_for('index'))
+    if request.method == 'POST':
+        name = request.form['name']
+        time_str = request.form['time']
+        if name and time_str:
+            reminders.append({'name': name, 'time': time_str})
+            flash('Reminder added successfully!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Please fill all fields!', 'error')
+    return render_template('add_reminder.html')
 
 @app.route('/delete/<int:index>')
 def delete_reminder(index):
-    reminders = load_reminders()
-    if 0 <= index < len(reminders):
-        removed = reminders.pop(index)
-        save_reminders(reminders)
-        flash(f"Deleted reminder for {removed['medicine']}", "success")
-    else:
-        flash("Invalid reminder index!", "error")
+    try:
+        reminders.pop(index)
+        flash('Reminder deleted successfully!', 'success')
+    except IndexError:
+        flash('Reminder not found!', 'error')
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
