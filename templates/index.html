@@ -1,33 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Medicare - Medicine Reminder</title>
+    <title>Medicine Reminder</title>
+    <script>
+        // JavaScript function to check for due reminders
+        function checkReminders() {
+            const reminders = JSON.parse('{{ reminders | tojson | safe }}');
+            const now = new Date();
+            const currentTime = now.toTimeString().slice(0,5); // "HH:MM"
+            
+            reminders.forEach(r => {
+                if (r.time === currentTime) {
+                    alert("⏰ Reminder: " + r.name);
+                }
+            });
+        }
 
-    <!-- Link CSS -->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+        // Check every 60 seconds
+        setInterval(checkReminders, 60000);
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Medicare</h1>
-        <p>Your personal medicine reminder web app.</p>
+    <h1>Medicine Reminders</h1>
+    <a href="{{ url_for('add_reminder') }}">Add Reminder</a>
+    <br><br>
 
-        <div class="auth-options">
-            <h2>Login</h2>
-            <form action="/login" method="POST">
-                <input type="text" name="username" placeholder="Username" required><br>
-                <input type="password" name="password" placeholder="Password" required><br>
-                <button type="submit">Login</button>
-            </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <p style="color: {% if category == 'success' %}green{% else %}red{% endif %};">
+            {{ message }}
+          </p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-            <h2>Sign Up</h2>
-            <form action="/signup" method="POST">
-                <input type="text" name="username" placeholder="Choose Username" required><br>
-                <input type="password" name="password" placeholder="Choose Password" required><br>
-                <button type="submit">Sign Up</button>
-            </form>
-        </div>
-    </div>
+    {% if reminders %}
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Name</th>
+            <th>Time</th>
+            <th>Action</th>
+        </tr>
+        {% for r in reminders %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.time }}</td>
+            <td><a href="{{ url_for('delete_reminder', index=loop.index0) }}">Delete</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No reminders added yet.</p>
+    {% endif %}
 </body>
 </html>
