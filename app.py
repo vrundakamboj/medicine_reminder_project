@@ -1,63 +1,58 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-import json, os
-from datetime import datetime
+import json
+import os
 
 app = Flask(__name__)
-app.secret_key = 'secretkey'
+app.secret_key = "secret"
 
-DATA_FILE = 'data.json'
+DATA_FILE = "static/data.json"
 
-# Load reminders
+# Load reminders from JSON
 def load_reminders():
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
+        with open(DATA_FILE, "r") as f:
             return json.load(f)
     return []
 
-# Save reminders
+# Save reminders to JSON
 def save_reminders(reminders):
-    with open(DATA_FILE, 'w') as f:
+    with open(DATA_FILE, "w") as f:
         json.dump(reminders, f, indent=4)
 
 @app.route('/')
-def index():
+def home():
     reminders = load_reminders()
-    return render_template('reminder.html', reminders=reminders)
+    return render_template("reminder.html", reminders=reminders)
 
 @app.route('/add', methods=['POST'])
 def add_reminder():
-    medicine = request.form['medicine'].strip()
-    time = request.form['time'].strip()
-    date = request.form['date'].strip()
-
-    if not medicine or not time or not date:
-        flash("All fields are required!", "error")
-        return redirect(url_for('index'))
-
-    try:
-        datetime.strptime(time, "%H:%M")
-        datetime.strptime(date, "%Y-%m-%d")
-    except ValueError:
-        flash("Invalid time or date format!", "error")
-        return redirect(url_for('index'))
+    medicine = request.form['medicine']
+    time = request.form['time']
+    date = request.form['date']
 
     reminders = load_reminders()
     reminders.append({"medicine": medicine, "time": time, "date": date})
     save_reminders(reminders)
 
     flash("Reminder added successfully!", "success")
-    return redirect(url_for('index'))
+    return redirect(url_for("home"))
 
 @app.route('/delete/<int:index>')
 def delete_reminder(index):
     reminders = load_reminders()
     if 0 <= index < len(reminders):
-        removed = reminders.pop(index)
+        reminders.pop(index)
         save_reminders(reminders)
-        flash(f"Deleted reminder for {removed['medicine']}", "success")
+        flash("Reminder deleted successfully!", "success")
     else:
-        flash("Invalid reminder index!", "error")
-    return redirect(url_for('index'))
+        flash("Reminder not found!", "error")
+    return redirect(url_for("home"))
 
 if __name__ == '__main__':
+    # Ensure data file exists
+    if not os.path.exists("static"):
+        os.mkdir("static")
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w") as f:
+            json.dump([], f)
     app.run(debug=True)
